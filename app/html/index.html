@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title><%= htmlWebpackPlugin.options.title %></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body>
+    <div class="wrapper">
+      <div class="one">
+        <div class="buttons">
+          <button id="btnButton">Some Button</button>
+        </div>
+      </div>
+      <div class="half">
+        <div class="screen">
+          <video id="video" width="640" height="480"></video>
+        </div>
+      </div>
+      <div class="half">
+        <canvas id="mirrorCanvas" width="640" height="480"></canvas>
+      </div>
+      <div id="footer" class="one"></div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,55 @@
+.screen {
+  position: relative;
+  width: 640;
+  height: 480;
+  /* float: left; */
+}
+
+.buttons > * {
+  padding: 0.25rem 0.35rem;
+  float: left;
+  margin: 0.25rem;
+}
+
+.buttons p {
+  color: black;
+}
+
+.screen canvas,
+video {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+#mirrorCanvas {
+  background-color: black;
+  border: 1px solid lightgrey;
+}
+
+.wrapper {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: space-between;
+  align-content: stretch;
+}
+
+.wrapper > * {
+  margin-bottom: 1rem;
+}
+
+.twothirds {
+  flex-basis: 66%;
+}
+
+.one {
+  flex-basis: 100%;
+}
+
+.onethird {
+  flex-basis: 32%;
+}
+
+.half {
+  flex-basis: 49%;
+}

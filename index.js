@@ -1,11 +1,11 @@
+import "./app/css/styles.css"
 import init, * as wasm from "./pkg/convoluted_mirror.js"
 import mirrorwasm from "./pkg/convoluted_mirror_bg.wasm"
 
 const WIDTH = 640.0
 const HEIGHT = 480.0
 
-const video = document.createElement("video")
-document.body.appendChild(video)
+let mirrorCanvas = document.getElementById("mirrorCanvas")
 
 // setup and play video
 ;(async () => {
@@ -25,4 +25,11 @@ document.body.appendChild(video)
 
   video.srcObject = stream
   await video.play()
+
+  async function animate() {
+    // draw frame coming from the video stream
+    mirrorCanvas.getContext("2d").drawImage(video, 0, 0)
+    requestAnimationFrame(animate)
+  }
+  requestAnimationFrame(animate)
 })()

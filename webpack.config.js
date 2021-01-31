@@ -22,12 +22,18 @@ module.exports = {
           name: "[name].[ext]",
         },
       },
+      {
+        test: /\.css$/,
+        include: /css/,
+        use: ["style-loader", "css-loader"],
+      },
     ],
   },
   plugins: [
     new CleanWebpackPlugin(),
     new HtmlWebpackPlugin({
       title: "convoluted mirror",
+      template: "./app//html/index.html",
     }),
   ],
   output: {
