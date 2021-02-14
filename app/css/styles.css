@@ -43,6 +43,7 @@ video {
 }
 
 .one {
+  text-align: center;
   flex-basis: 100%;
 }
 
@@ -52,4 +53,5 @@ video {
 
 .half {
   flex-basis: 49%;
+  display: none;
 }
