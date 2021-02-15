@@ -7,10 +7,8 @@ const HEIGHT = 480.0
 
 // let mirror = null
 let mirrorCanvas = document.getElementById("mirrorCanvas")
-let frame1,
-  frame2
 
-  // setup and play video
+// setup and play video
 ;(async () => {
   await init(mirrorwasm)
 
@@ -26,7 +24,7 @@ let frame1,
   video.srcObject = stream
   await video.play()
 
-  const mirror = new wasm.Mirror(video, mirrorCanvas, WIDTH, HEIGHT)
+  const mirror = new wasm.Mirror(mirrorCanvas, WIDTH, HEIGHT)
   console.log(mirror.talk())
 
   let i = 0

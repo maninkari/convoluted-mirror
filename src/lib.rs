@@ -2,7 +2,7 @@ use std::fmt;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::Clamped;
 use wasm_bindgen::JsCast;
-use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, HtmlVideoElement, ImageData};
+use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData};
 
 #[wasm_bindgen]
 pub struct Mirror {
@@ -10,7 +10,6 @@ pub struct Mirror {
     f2: Frame,
     delta: Frame,
     context: CanvasRenderingContext2d,
-    video: HtmlVideoElement,
     width: u32,
     height: u32,
 }
@@ -18,7 +17,7 @@ pub struct Mirror {
 #[wasm_bindgen]
 impl Mirror {
     #[wasm_bindgen(constructor)]
-    pub fn new(_video: HtmlVideoElement, canvas: HtmlCanvasElement, w: u32, h: u32) -> Mirror {
+    pub fn new(canvas: HtmlCanvasElement, w: u32, h: u32) -> Mirror {
         let ctx = canvas
             .get_context("2d")
             .unwrap()
@@ -27,7 +26,6 @@ impl Mirror {
             .expect("failed to obtain 2d rendering context for target <canvas>");
 
         Mirror {
-            video: _video,
             context: ctx,
             f1: Frame::new(w, h),
             f2: Frame::new(w, h),
@@ -50,7 +48,7 @@ impl Mirror {
         self.delta.convolute(7);
 
         let data = ImageData::new_with_u8_clamped_array_and_sh(
-            Clamped(&mut self.delta.pixels.clone()),
+            Clamped(&self.delta.pixels.clone()),
             self.width,
             self.height,
         )?;
@@ -60,7 +58,7 @@ impl Mirror {
 
     #[wasm_bindgen(method)]
     pub fn talk(&self) -> String {
-        return self.to_string();
+        self.to_string()
     }
 }
 
@@ -141,7 +139,7 @@ impl Frame {
         let trans = pxs
             .iter()
             .enumerate()
-            .map(|(i, x): (usize, &u8)| alpha_on(i))
+            .map(|(i, _x): (usize, &u8)| alpha_on(i))
             .collect::<Vec<u8>>();
 
         Frame {
@@ -178,13 +176,13 @@ impl Frame {
                     let m_r = vec![
                         self.pixels[row1],
                         self.pixels[row1 + 4],
-                        self.pixels[row1 + 4],
+                        self.pixels[row1 + 8],
                         self.pixels[row2],
                         self.pixels[row2 + 4],
-                        self.pixels[row2 + 4],
+                        self.pixels[row2 + 8],
                         self.pixels[row3],
                         self.pixels[row3 + 4],
-                        self.pixels[row3 + 4],
+                        self.pixels[row3 + 8],
                     ];
 
                     row1 += 1;
@@ -194,13 +192,13 @@ impl Frame {
                     let m_g = vec![
                         self.pixels[row1],
                         self.pixels[row1 + 4],
-                        self.pixels[row1 + 4],
+                        self.pixels[row1 + 8],
                         self.pixels[row2],
                         self.pixels[row2 + 4],
-                        self.pixels[row2 + 4],
+                        self.pixels[row2 + 8],
                         self.pixels[row3],
                         self.pixels[row3 + 4],
-                        self.pixels[row3 + 4],
+                        self.pixels[row3 + 8],
                     ];
 
                     row1 += 1;
@@ -210,13 +208,13 @@ impl Frame {
                     let m_b = vec![
                         self.pixels[row1],
                         self.pixels[row1 + 4],
-                        self.pixels[row1 + 4],
+                        self.pixels[row1 + 8],
                         self.pixels[row2],
                         self.pixels[row2 + 4],
-                        self.pixels[row2 + 4],
+                        self.pixels[row2 + 8],
                         self.pixels[row3],
                         self.pixels[row3 + 4],
-                        self.pixels[row3 + 4],
+                        self.pixels[row3 + 8],
                     ];
 
                     let mut pr = 0;
@@ -249,7 +247,7 @@ impl Frame {
     #[wasm_bindgen(method)]
     pub fn draw(&mut self, ctx: CanvasRenderingContext2d) -> Result<(), JsValue> {
         let data = ImageData::new_with_u8_clamped_array_and_sh(
-            Clamped(&mut self.pixels),
+            Clamped(&self.pixels),
             self.width,
             self.height,
         )?;
