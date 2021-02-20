@@ -4,14 +4,16 @@ use wasm_bindgen::Clamped;
 use wasm_bindgen::JsCast;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData};
 
-pub mod frame;
-pub use self::frame::Frame;
+pub mod tools;
+use crate::tools::frame::{frame_from_delta, frame_from_imgdata, Frame};
+use crate::tools::hsv::{hsv_from_delta, HsvFrame};
 
 #[wasm_bindgen]
 pub struct Mirror {
     f1: Frame,
     f2: Frame,
     delta: Frame,
+    delta_hsv: HsvFrame,
     context: CanvasRenderingContext2d,
     width: u32,
     height: u32,
@@ -30,9 +32,10 @@ impl Mirror {
 
         Mirror {
             context: ctx,
-            f1: frame::Frame::new(w, h),
-            f2: frame::Frame::new(w, h),
-            delta: frame::Frame::new(w, h),
+            f1: Frame::new(w, h),
+            f2: Frame::new(w, h),
+            delta: Frame::new(w, h),
+            delta_hsv: HsvFrame::new(Frame::new(w, h)),
             width: w,
             height: h,
         }
@@ -46,12 +49,33 @@ impl Mirror {
             .unwrap();
 
         self.f2 = self.f1.clone();
-        self.f1 = frame::frame_from_imgdata(imd);
-        self.delta = frame::frame_from_delta(self.f1.clone(), self.f2.clone());
+        self.f1 = frame_from_imgdata(imd);
+        self.delta = frame_from_delta(self.f1.clone(), self.f2.clone());
         self.delta.convolute(7);
 
         let data = ImageData::new_with_u8_clamped_array_and_sh(
             Clamped(&self.delta.dump_pixels()),
+            self.width,
+            self.height,
+        )?;
+        renderctx.clear_rect(0.0, 0.0, self.width as f64, self.height as f64);
+        renderctx.put_image_data(&data, 0.0, 0.0)
+    }
+
+    #[wasm_bindgen(method)]
+    pub fn convolute_hsv(&mut self, renderctx: CanvasRenderingContext2d) -> Result<(), JsValue> {
+        let imd = self
+            .context
+            .get_image_data(0.0, 0.0, self.width as f64, self.height as f64)
+            .unwrap();
+
+        self.f2 = self.f1.clone();
+        self.f1 = frame_from_imgdata(imd);
+        self.delta_hsv = hsv_from_delta(self.f1.clone(), self.f2.clone());
+        self.delta_hsv.convolute(7);
+
+        let data = ImageData::new_with_u8_clamped_array_and_sh(
+            Clamped(&self.delta_hsv.dump_pixels(7)),
             self.width,
             self.height,
         )?;

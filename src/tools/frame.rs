@@ -83,6 +83,18 @@ impl Frame {
         }
     }
 
+    pub fn pixels(&self) -> Vec<u8> {
+        self.dump_pixels()
+    }
+
+    pub fn width(&self) -> u32 {
+        self.width
+    }
+
+    pub fn height(&self) -> u32 {
+        self.height
+    }
+
     pub fn convolute(&mut self, c: u32) {
         let w = self.width as usize;
         let h = self.height as usize;

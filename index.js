@@ -32,7 +32,7 @@ let mirrorCanvas = document.getElementById("mirrorCanvas")
     // draw frame coming from the video stream
     mirrorCanvas.getContext("2d").drawImage(video, 0, 0)
     // draw conlute reflection on the mirrorConvolute canvas
-    mirror.convolute(mirrorConvolute.getContext("2d"))
+    mirror.convolute_hsv(mirrorConvolute.getContext("2d"))
     requestAnimationFrame(animate)
   }
   requestAnimationFrame(animate)
