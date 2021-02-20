@@ -9,7 +9,7 @@
     "build": "webpack",
     "wasm": "wasm-pack build --target web",
     "start": "webpack serve --hot",
-    "format": "rustfmt src/*"
+    "format": "rustfmt src/* && cargo clippy"
   },
   "dependencies": {
     "webpack": "^5.19.0",
