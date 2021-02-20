@@ -22,6 +22,14 @@ impl Frame {
     }
 
     #[wasm_bindgen(method)]
+    pub fn convolute(&mut self) {
+        self.pixels = self.pixels.iter()
+            .enumerate()
+            .map(|(i, x)| if i % 4 == 0 { *x } else { 255 })
+            .collect::<Vec<u8>>();
+    }
+
+    #[wasm_bindgen(method)]
     pub fn draw(&mut self, ctx: CanvasRenderingContext2d) -> Result<(), JsValue> {
         let data = ImageData::new_with_u8_clamped_array_and_sh(
             Clamped(&self.pixels),

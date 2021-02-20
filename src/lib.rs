@@ -26,10 +26,15 @@ impl Mirror {
     pub fn convolute(&mut self, renderctx: CanvasRenderingContext2d) -> Result<(), JsValue> {
         let imgdata = self
             .context
-            .get_image_data(0.0, 0.0, self.width as f64, self.height as f64)
+            .get_image_data(
+                0.0, 
+                0.0, 
+                self.width as f64, 
+                self.height as f64)
             .unwrap();
 
         let mut frm = frame::Frame::new(imgdata);
+        frm.convolute();
         frm.draw(renderctx)
     }
 }
