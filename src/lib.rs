@@ -1,6 +1,5 @@
-use std::fmt;
 use wasm_bindgen::prelude::*;
-use web_sys::{CanvasRenderingContext2d};
+use web_sys::CanvasRenderingContext2d;
 
 #[wasm_bindgen]
 pub struct Mirror {
