@@ -6,15 +6,15 @@ use web_sys::{CanvasRenderingContext2d, ImageData};
 
 #[wasm_bindgen]
 pub fn hsv_from_delta(f1: Frame, f2: Frame) -> HsvFrame {
-    let f1_w = f1.width();
-    let f2_w = f2.width();
-    let f1_h = f1.height();
-    let f2_h = f2.height();
+    let f1_width = f1.width();
+    let f2_width = f2.width();
+    let f1_height = f1.height();
+    let f2_height = f2.height();
 
     let f1_hsv = HsvFrame::new(f1);
     let f2_hsv = HsvFrame::new(f2);
 
-    let len = (f1_w * f1_h * 4) as usize;
+    let len = (f1_width * f1_height * 4) as usize;
     let mut hsva_pixels = vec![
         HSVA {
             h: 0.0,
@@ -25,38 +25,36 @@ pub fn hsv_from_delta(f1: Frame, f2: Frame) -> HsvFrame {
         len
     ];
 
-    if f1_w == f2_w && f1_h == f2_h {
-        for i in 0..f1_w * f1_h {
+    if f1_width == f2_width && f1_height == f2_height {
+        for i in 0..f1_width * f1_height {
             let i = i as usize;
 
-            let mut h = 0.0;
-            let mut s = 0.0;
-            let mut v = 0.0;
-            let mut a = 0.0;
+            let mut hue = 0.0;
+            let mut saturation = 0.0;
+            let mut value = 0.0;
+            let mut alpha = 0.0;
 
             // both points in intersection, both alphas != 0
-            if f1_hsv.pixels[i].a == f2_hsv.pixels[i].a && f1_hsv.pixels[i].a == 1.0 {
-                h = f1_hsv.pixels[i].h - f2_hsv.pixels[i].h;
-                s = f1_hsv.pixels[i].s - f2_hsv.pixels[i].s;
-                v = f1_hsv.pixels[i].v - f2_hsv.pixels[i].v;
-
-                h = if h < 0.0 { 0.0 } else { h };
-                s = if s < 0.0 { 0.0 } else { s };
-                v = if v < 0.0 { 0.0 } else { v };
-                a = 1.0;
+            if (f1_hsv.pixels[i].a - f2_hsv.pixels[i].a).abs() < f32::EPSILON
+                && (f1_hsv.pixels[i].a - 1.0).abs() < f32::EPSILON
+            {
+                hue = f1_hsv.pixels[i].h - f2_hsv.pixels[i].h;
+                saturation = f1_hsv.pixels[i].s - f2_hsv.pixels[i].s;
+                value = f1_hsv.pixels[i].v - f2_hsv.pixels[i].v;
+                alpha = 1.0;
             }
 
-            hsva_pixels[i].h = h;
-            hsva_pixels[i].s = s;
-            hsva_pixels[i].v = v;
-            hsva_pixels[i].a = a;
+            hsva_pixels[i].h = hue.abs();
+            hsva_pixels[i].s = saturation.abs();
+            hsva_pixels[i].v = value.abs();
+            hsva_pixels[i].a = alpha;
         }
     }
 
     HsvFrame {
         pixels: hsva_pixels,
-        width: f1_w,
-        height: f1_h
+        width: f1_width,
+        height: f1_height,
     }
 }
 
@@ -73,7 +71,7 @@ pub struct HSVA {
 pub struct HsvFrame {
     pixels: Vec<HSVA>,
     width: u32,
-    height: u32
+    height: u32,
 }
 
 #[wasm_bindgen]
@@ -85,13 +83,10 @@ impl HsvFrame {
 
     #[wasm_bindgen(method)]
     pub fn draw(&mut self, ctx: CanvasRenderingContext2d) -> Result<(), JsValue> {
-        let mut pxs = hsva_2_rgba(self.pixels.to_vec(), self.width, self.height);
+        let pxs = hsva_2_rgba(self.pixels.to_vec(), self.width, self.height);
 
-        let data = ImageData::new_with_u8_clamped_array_and_sh(
-            Clamped(&mut pxs),
-            self.width,
-            self.height,
-        )?;
+        let data =
+            ImageData::new_with_u8_clamped_array_and_sh(Clamped(&pxs), self.width, self.height)?;
         ctx.clear_rect(0.0, 0.0, self.width as f64, self.height as f64);
         ctx.put_image_data(&data, 0.0, 0.0)
     }
@@ -114,8 +109,8 @@ impl HsvFrame {
 
     #[wasm_bindgen(method)]
     pub fn convolute(&mut self, c: u32) {
-        let w = self.width as usize;
-        let h = self.height as usize;
+        let width = self.width as usize;
+        let height = self.height as usize;
 
         let mut convpixels = vec![
             HSVA {
@@ -123,21 +118,24 @@ impl HsvFrame {
                 s: 0.0,
                 v: 0.0,
                 a: 0.0
-            }; w * h * 4];
+            };
+            width * height * 4
+        ];
 
-        let kernel = vec![1.0, -2.0, 1.0, -2.0, 4.0, -2.0, 1.0, -2.0, 1.0];
+        // let kernel = vec![1.0, -2.0, 1.0, -2.0, 4.0, -2.0, 1.0, -2.0, 1.0];
+        let kernel = vec![-1.0, -1.0, -1.0, -1.0, 8.0, -1.0, -1.0, -1.0, -1.0];
 
-        for y in 0..h {
-            for x in 0..w {
+        for y in 0..height {
+            for x in 0..width {
                 // indices
-                let n = y * w + x;
+                let n = y * width + x;
 
-                if x == 0 || x == w - 1 || y == 0 || y == h - 1 {
+                if x == 0 || x == width - 1 || y == 0 || y == height - 1 {
                     convpixels[n] = self.pixels[n];
                 } else {
-                    let row1 = (y - 1) * w + (x - 1);
-                    let row2 = row1 +  w;
-                    let row3 = row2 + w;
+                    let row1 = (y - 1) * width + (x - 1);
+                    let row2 = row1 + width;
+                    let row3 = row2 + width;
 
                     let mat = vec![
                         self.pixels[row1],
@@ -179,8 +177,8 @@ impl HsvFrame {
     }
 }
 
-pub fn rgba_2_hsva(pixels: Vec<u8>, w: u32, h: u32) -> HsvFrame {
-    let len = (w * h) as usize;
+pub fn rgba_2_hsva(pixels: Vec<u8>, width: u32, height: u32) -> HsvFrame {
+    let len = (width * height) as usize;
     let mut hsva_pixels = vec![
         HSVA {
             h: 0.0,
@@ -191,107 +189,107 @@ pub fn rgba_2_hsva(pixels: Vec<u8>, w: u32, h: u32) -> HsvFrame {
         len
     ];
 
-    for i in 0..len {
+    for (i, hsva_pixel) in hsva_pixels.iter_mut().enumerate().take(len) {
         let i4 = i * 4;
-        let r = pixels[i4] as f32 / 255.0;
-        let g = pixels[i4 + 1] as f32 / 255.0;
-        let b = pixels[i4 + 2] as f32 / 255.0;
-        let a = pixels[i4 + 3] as f32 / 255.0;
+        let red = pixels[i4] as f32 / 255.0;
+        let green = pixels[i4 + 1] as f32 / 255.0;
+        let blue = pixels[i4 + 2] as f32 / 255.0;
+        let alpha = pixels[i4 + 3] as f32 / 255.0;
 
         let x_max = max(max(pixels[i4], pixels[i4 + 1]), pixels[i4 + 2]) as f32 / 255.0;
         let x_min = min(min(pixels[i4], pixels[i4 + 1]), pixels[i4 + 2]) as f32 / 255.0;
 
         let delta = x_max - x_min;
-        let mut h = 0.0;
-        let s = if x_max == 0.0 { 0.0 } else { delta / x_max };
-        let v = x_max;
+        let mut hue = 0.0;
+        let saturation = if x_max == 0.0 { 0.0 } else { delta / x_max };
+        let value = x_max;
 
-        if x_min != x_max {
-            h = if x_max == r {
-                if g < b {
-                    6.0 + (g - b) / delta
+        if (x_min - x_max).abs() > f32::EPSILON {
+            hue = if (x_max - red).abs() < f32::EPSILON {
+                if green < blue {
+                    6.0 + (green - blue) / delta
                 } else {
-                    (g - b) / delta
+                    (green - blue) / delta
                 }
-            } else if x_max == g {
-                2.0 + (b - r) / delta
+            } else if (x_max - green).abs() < f32::EPSILON {
+                2.0 + (blue - red) / delta
             } else {
-                4.0 + (r - g) / delta
+                4.0 + (red - green) / delta
             };
 
-            h /= 6.0;
+            hue /= 6.0;
         };
 
-        hsva_pixels[i].h = h;
-        hsva_pixels[i].s = s;
-        hsva_pixels[i].v = v;
-        hsva_pixels[i].a = a;
+        hsva_pixel.h = hue;
+        hsva_pixel.s = saturation;
+        hsva_pixel.v = value;
+        hsva_pixel.a = alpha;
     }
 
     HsvFrame {
         pixels: hsva_pixels,
-        width: w,
-        height: h
+        width,
+        height,
     }
 }
 
-pub fn hsva_2_rgba(pixels: Vec<HSVA>, w: u32, h: u32) -> Vec<u8> {
-    let len = (w * h) as usize;
+fn hsva_2_rgba(hsva_pixels: Vec<HSVA>, width: u32, height: u32) -> Vec<u8> {
+    let len = (width * height) as usize;
     let mut rgba_pixels = vec![0; len * 4];
 
-    for i in 0..len {
+    for (i, hsva_pixel) in hsva_pixels.iter().enumerate().take(len) {
         let i4 = i * 4;
 
-        let j = (pixels[i].h * 6.0).floor();
-        let f = pixels[i].h * 6.0 - j;
-        let p = pixels[i].v * (1.0 - pixels[i].s);
-        let q = pixels[i].v * (1.0 - f * pixels[i].s);
-        let t = pixels[i].v * (1.0 - (1.0 - f) * pixels[i].s);
+        let j = (hsva_pixel.h * 6.0).floor();
+        let f = hsva_pixel.h * 6.0 - j;
+        let p = hsva_pixel.v * (1.0 - hsva_pixel.s);
+        let q = hsva_pixel.v * (1.0 - f * hsva_pixel.s);
+        let t = hsva_pixel.v * (1.0 - (1.0 - f) * hsva_pixel.s);
 
-        let mut r = 0.0;
-        let mut g = 0.0;
-        let mut b = 0.0;
+        let mut red = 0.0;
+        let mut green = 0.0;
+        let mut blue = 0.0;
 
-        let jj = j as i32;
+        let j = j as i32;
 
-        match jj % 6 {
+        match j % 6 {
             0 => {
-                r = pixels[i].v;
-                g = t;
-                b = p;
+                red = hsva_pixel.v;
+                green = t;
+                blue = p;
             }
             1 => {
-                r = q;
-                g = pixels[i].v;
-                b = p;
+                red = q;
+                green = hsva_pixel.v;
+                blue = p;
             }
             2 => {
-                r = p;
-                g = pixels[i].v;
-                b = t;
+                red = p;
+                green = hsva_pixel.v;
+                blue = t;
             }
             3 => {
-                r = p;
-                g = q;
-                b = pixels[i].v;
+                red = p;
+                green = q;
+                blue = hsva_pixel.v;
             }
             4 => {
-                r = t;
-                g = p;
-                b = pixels[i].v;
+                red = t;
+                green = p;
+                blue = hsva_pixel.v;
             }
             5 => {
-                r = pixels[i].v;
-                g = p;
-                b = q;
+                red = hsva_pixel.v;
+                green = p;
+                blue = q;
             }
             _ => (),
         }
 
-        rgba_pixels[i4] = (r * 255.0) as u8;
-        rgba_pixels[i4 + 1] = (g * 255.0) as u8;
-        rgba_pixels[i4 + 2] = (b * 255.0) as u8;
-        rgba_pixels[i4 + 3] = (255.0 * pixels[i].a) as u8;
+        rgba_pixels[i4] = (red * 255.0) as u8;
+        rgba_pixels[i4 + 1] = (green * 255.0) as u8;
+        rgba_pixels[i4 + 2] = (blue * 255.0) as u8;
+        rgba_pixels[i4 + 3] = (255.0 * hsva_pixel.a) as u8;
     }
 
     rgba_pixels
