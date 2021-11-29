@@ -7,6 +7,34 @@ use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData};
 pub mod frame;
 pub use self::frame::Frame;
 
+// let mut kernel = vec![1, -2, 1, -2, 4, -2, 1, -2, 1];
+
+// let mut kernel = vec![
+//     1, 1, 2, 1, 1, 
+//     1, 1, 4, 1, 1, 
+//     4, 4, 4, 4, 4, 
+//     1, 1, 4, 1, 1,
+//     1, 1, 2, 1, 1,
+// ];
+
+// let mut kernel = vec![
+//     1, 4, 6, 4, 1, 
+//     4, 16, 24, 16, 4, 
+//     6, 24, -476, 24, 6, 
+//     4, 16, 24, 16, 4, 
+//     1, 4, 6, 4, 1, 
+// ];
+
+// let mut kernel = vec![
+//     1, 1, 1, 1, 1, 1, 1,
+//     1, 1, 1, 1, 1, 1, 1,
+//     1, 1, 1, 1, 1, 1, 1, 
+//     1, 1, 1, -270, 1, 1, 1,
+//     1, 1, 1, 1, 1, 1, 1,
+//     1, 1, 1, 1, 1, 1, 1,
+//     1, 1, 1, 1, 1, 1, 1,
+// ];
+
 #[wasm_bindgen]
 pub struct Mirror {
     f1: Frame,
@@ -15,6 +43,7 @@ pub struct Mirror {
     context: CanvasRenderingContext2d,
     width: u32,
     height: u32,
+    kernel: Vec<i32>
 }
 
 #[wasm_bindgen]
@@ -35,6 +64,13 @@ impl Mirror {
             delta: frame::Frame::new(w, h),
             width: w,
             height: h,
+            kernel: vec![
+                1, 1, 2, 1, 1, 
+                1, 1, 4, 1, 1, 
+                4, 4, 4, 4, 4, 
+                1, 1, 4, 1, 1,
+                1, 1, 2, 1, 1,
+            ]
         }
     }
 
@@ -48,7 +84,7 @@ impl Mirror {
         self.f2 = self.f1.clone();
         self.f1 = frame::frame_from_imgdata(imd);
         self.delta = frame::frame_from_delta(self.f1.clone(), self.f2.clone());
-        self.delta.convolute(7);
+        self.delta.convolute(7, &self.kernel);
 
         let data = ImageData::new_with_u8_clamped_array_and_sh(
             Clamped(&self.delta.dump_pixels()),

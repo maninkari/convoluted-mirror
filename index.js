@@ -7,6 +7,11 @@ const HEIGHT = 480.0
 
 // let mirror = null
 let mirrorCanvas = document.getElementById("mirrorCanvas")
+let btnStart = document.getElementById("btnStart")
+
+btnStart.addEventListener('click', async () => {
+  console.log('start')
+})
 
 // setup and play video
 ;(async () => {
