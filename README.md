@@ -1,5 +1,7 @@
 # convoluted-mirror
 
+![](images/convolution_01.png)
+
 Experimental mirror built with webAssembly, Rust and javascript
 
 ## Commands
