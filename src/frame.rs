@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::Clamped;
-use web_sys::{CanvasRenderingContext2d, ImageData, console};
+use web_sys::{console, CanvasRenderingContext2d, ImageData};
 
 #[wasm_bindgen]
 pub fn frame_from_imgdata(imgdata: ImageData) -> Frame {
@@ -90,25 +90,25 @@ impl Frame {
         // let mut kernel = vec![1, -2, 1, -2, 4, -2, 1, -2, 1];
 
         // let mut kernel = vec![
-        //     1, 1, 2, 1, 1, 
-        //     1, 1, 4, 1, 1, 
-        //     4, 4, 4, 4, 4, 
+        //     1, 1, 2, 1, 1,
+        //     1, 1, 4, 1, 1,
+        //     4, 4, 4, 4, 4,
         //     1, 1, 4, 1, 1,
         //     1, 1, 2, 1, 1,
         // ];
 
         // let mut kernel = vec![
-        //     1, 4, 6, 4, 1, 
-        //     4, 16, 24, 16, 4, 
-        //     6, 24, -476, 24, 6, 
-        //     4, 16, 24, 16, 4, 
-        //     1, 4, 6, 4, 1, 
+        //     1, 4, 6, 4, 1,
+        //     4, 16, 24, 16, 4,
+        //     6, 24, -476, 24, 6,
+        //     4, 16, 24, 16, 4,
+        //     1, 4, 6, 4, 1,
         // ];
 
         // let mut kernel = vec![
         //     1, 1, 1, 1, 1, 1, 1,
         //     1, 1, 1, 1, 1, 1, 1,
-        //     1, 1, 1, 1, 1, 1, 1, 
+        //     1, 1, 1, 1, 1, 1, 1,
         //     1, 1, 1, -270, 1, 1, 1,
         //     1, 1, 1, 1, 1, 1, 1,
         //     1, 1, 1, 1, 1, 1, 1,
@@ -117,8 +117,8 @@ impl Frame {
 
         let mut convpixels = vec![0; w * h * 4];
         let kernel_sq = (kernel.len() as f32).sqrt() as usize;
-        let kernel_delta = (kernel_sq as f32 / 2_f32) as usize;  
-        
+        let kernel_delta = (kernel_sq as f32 / 2_f32) as usize;
+
         // console::log_2(&"kernel delta: ".into(), &JsValue::from(kernel_delta));
 
         for y in 0..h {
@@ -128,17 +128,21 @@ impl Frame {
                 let blue = green + 1;
                 let alpha = blue + 1;
 
-                if x < kernel_delta || x >= w - kernel_delta || y < kernel_delta || y >= h - kernel_delta {
+                if x < kernel_delta
+                    || x >= w - kernel_delta
+                    || y < kernel_delta
+                    || y >= h - kernel_delta
+                {
                     convpixels[red] = 0;
                     convpixels[green] = 0;
                     convpixels[blue] = 0;
                     convpixels[alpha] = self.pixels[alpha];
                 } else {
                     let init = 4 * ((y - kernel_delta) * w + (x - kernel_delta));
-                    
-                    let pr = self.conv_pixel(init, 4*w, kernel, kernel_sq) as i32;
-                    let pg = self.conv_pixel(init + 1, 4*w, kernel, kernel_sq) as i32;
-                    let pb = self.conv_pixel(init + 2, 4*w, kernel, kernel_sq) as i32;
+
+                    let pr = self.conv_pixel(init, 4 * w, kernel, kernel_sq) as i32;
+                    let pg = self.conv_pixel(init + 1, 4 * w, kernel, kernel_sq) as i32;
+                    let pb = self.conv_pixel(init + 2, 4 * w, kernel, kernel_sq) as i32;
 
                     // warning: truncation
                     let p_r = pr.abs() as u8;
@@ -151,23 +155,29 @@ impl Frame {
                     convpixels[alpha] = self.pixels[alpha];
                 }
             }
-        };
+        }
 
         self.pixels = convpixels
     }
 
-    fn conv_pixel(&mut self, init: usize, row_len: usize, kernel: &Vec<i32>, kernel_sq: usize ) -> u8 {
+    fn conv_pixel(
+        &mut self,
+        init: usize,
+        row_len: usize,
+        kernel: &Vec<i32>,
+        kernel_sq: usize,
+    ) -> u8 {
         let mut i = init;
         let mut ret = 0;
 
-        //  kernel by surrounding pixels matrix 
+        //  kernel by surrounding pixels matrix
         for j in 0..kernel_sq {
             for k in 0..kernel_sq {
-                ret += self.pixels[i + 4*k] as i32 * kernel[k + j*kernel_sq];
+                ret += self.pixels[i + 4 * k] as i32 * kernel[k + j * kernel_sq];
             }
 
             i += row_len;
-        };
+        }
 
         ret as u8
     }
