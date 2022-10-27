@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::Clamped;
-use web_sys::{CanvasRenderingContext2d, ImageData};
+use web_sys::{console, CanvasRenderingContext2d, ImageData};
 
 #[wasm_bindgen]
 pub fn frame_from_imgdata(imgdata: ImageData) -> Frame {
@@ -15,19 +15,20 @@ pub fn frame_from_imgdata(imgdata: ImageData) -> Frame {
 pub fn frame_from_delta(f1: Frame, f2: Frame) -> Frame {
     if f1.width == f2.width && f1.height == f2.height && f1.pixels.len() == f2.pixels.len() {
         let mut pxs = vec![0; f1.pixels.len() as usize];
+        let min_delta = 150;
 
         for i in 0..f1.width * f1.height {
             let i = i as usize;
             let i4 = i * 4;
 
             if f1.pixels[i4 + 3] == f2.pixels[i4 + 3] && f1.pixels[i4 + 3] == 255 {
-                let p_r = f1.pixels[i4] - f2.pixels[i4];
-                let p_g = f1.pixels[i4 + 1] - f2.pixels[i4 + 1];
-                let p_b = f1.pixels[i4 + 2] - f2.pixels[i4 + 2];
+                let p_r = ((f1.pixels[i4] - f2.pixels[i4]) as f32).abs() as u8;
+                let p_g = ((f1.pixels[i4 + 1] - f2.pixels[i4 + 1]) as f32).abs() as u8;
+                let p_b = ((f1.pixels[i4 + 2] - f2.pixels[i4 + 2]) as f32).abs() as u8;
 
-                pxs[i4] = if p_r > 250 || p_r < 150 { 0 } else { p_r };
-                pxs[i4 + 1] = if p_g > 250 || p_g < 150 { 0 } else { p_g };
-                pxs[i4 + 2] = if p_b > 250 || p_b < 150 { 0 } else { p_b };
+                pxs[i4] = if p_r > 250 || p_r < min_delta { 0 } else { p_r };
+                pxs[i4 + 1] = if p_g > 250 || p_g < min_delta { 0 } else { p_g };
+                pxs[i4 + 2] = if p_b > 250 || p_b < min_delta { 0 } else { p_b };
                 pxs[i4 + 3] = 255;
             } else {
                 pxs[i4] = 0;
@@ -48,7 +49,7 @@ pub fn frame_from_delta(f1: Frame, f2: Frame) -> Frame {
 }
 
 // returns black frame
-pub fn alpha_on(i: usize) -> u8 {
+pub fn black_px(i: usize) -> u8 {
     if (i + 1) % 4 == 0 {
         255
     } else {
@@ -64,16 +65,15 @@ pub struct Frame {
     height: u32,
 }
 
-#[wasm_bindgen]
 impl Frame {
-    #[wasm_bindgen(constructor)]
     pub fn new(w: u32, h: u32) -> Self {
         let pxs = vec![255; (w * h * 4) as usize];
+        console::log_1(&"constructor: ".into());
 
         let trans = pxs
             .iter()
             .enumerate()
-            .map(|(i, _x): (usize, &u8)| alpha_on(i))
+            .map(|(i, _x): (usize, &u8)| black_px(i))
             .collect::<Vec<u8>>();
 
         Frame {
@@ -83,12 +83,43 @@ impl Frame {
         }
     }
 
-    pub fn convolute(&mut self, c: u32) {
+    pub fn convolute(&mut self, c: u32, kernel: &Vec<i32>) {
         let w = self.width as usize;
         let h = self.height as usize;
 
+        // let mut kernel = vec![1, -2, 1, -2, 4, -2, 1, -2, 1];
+
+        // let mut kernel = vec![
+        //     1, 1, 2, 1, 1,
+        //     1, 1, 4, 1, 1,
+        //     4, 4, 4, 4, 4,
+        //     1, 1, 4, 1, 1,
+        //     1, 1, 2, 1, 1,
+        // ];
+
+        // let mut kernel = vec![
+        //     1, 4, 6, 4, 1,
+        //     4, 16, 24, 16, 4,
+        //     6, 24, -476, 24, 6,
+        //     4, 16, 24, 16, 4,
+        //     1, 4, 6, 4, 1,
+        // ];
+
+        // let mut kernel = vec![
+        //     1, 1, 1, 1, 1, 1, 1,
+        //     1, 1, 1, 1, 1, 1, 1,
+        //     1, 1, 1, 1, 1, 1, 1,
+        //     1, 1, 1, -270, 1, 1, 1,
+        //     1, 1, 1, 1, 1, 1, 1,
+        //     1, 1, 1, 1, 1, 1, 1,
+        //     1, 1, 1, 1, 1, 1, 1,
+        // ];
+
         let mut convpixels = vec![0; w * h * 4];
-        let kernel = vec![1, -2, 1, -2, 4, -2, 1, -2, 1];
+        let kernel_sq = (kernel.len() as f32).sqrt() as usize;
+        let kernel_delta = (kernel_sq as f32 / 2_f32) as usize;
+
+        // console::log_2(&"kernel delta: ".into(), &JsValue::from(kernel_delta));
 
         for y in 0..h {
             for x in 0..w {
@@ -97,70 +128,21 @@ impl Frame {
                 let blue = green + 1;
                 let alpha = blue + 1;
 
-                if x == 0 || x == w - 1 || y == 0 || y == h - 1 {
-                    convpixels[red] = self.pixels[red];
-                    convpixels[green] = self.pixels[green];
-                    convpixels[blue] = self.pixels[blue];
+                if x < kernel_delta
+                    || x >= w - kernel_delta
+                    || y < kernel_delta
+                    || y >= h - kernel_delta
+                {
+                    convpixels[red] = 0;
+                    convpixels[green] = 0;
+                    convpixels[blue] = 0;
                     convpixels[alpha] = self.pixels[alpha];
                 } else {
-                    let mut row1 = 4 * ((y - 1) * w + (x - 1));
-                    let mut row2 = row1 + 4 * w;
-                    let mut row3 = row2 + 4 * w;
+                    let init = 4 * ((y - kernel_delta) * w + (x - kernel_delta));
 
-                    let m_r = vec![
-                        self.pixels[row1],
-                        self.pixels[row1 + 4],
-                        self.pixels[row1 + 8],
-                        self.pixels[row2],
-                        self.pixels[row2 + 4],
-                        self.pixels[row2 + 8],
-                        self.pixels[row3],
-                        self.pixels[row3 + 4],
-                        self.pixels[row3 + 8],
-                    ];
-
-                    row1 += 1;
-                    row2 += 1;
-                    row3 += 1;
-
-                    let m_g = vec![
-                        self.pixels[row1],
-                        self.pixels[row1 + 4],
-                        self.pixels[row1 + 8],
-                        self.pixels[row2],
-                        self.pixels[row2 + 4],
-                        self.pixels[row2 + 8],
-                        self.pixels[row3],
-                        self.pixels[row3 + 4],
-                        self.pixels[row3 + 8],
-                    ];
-
-                    row1 += 1;
-                    row2 += 1;
-                    row3 += 1;
-
-                    let m_b = vec![
-                        self.pixels[row1],
-                        self.pixels[row1 + 4],
-                        self.pixels[row1 + 8],
-                        self.pixels[row2],
-                        self.pixels[row2 + 4],
-                        self.pixels[row2 + 8],
-                        self.pixels[row3],
-                        self.pixels[row3 + 4],
-                        self.pixels[row3 + 8],
-                    ];
-
-                    let mut pr = 0;
-                    let mut pg = 0;
-                    let mut pb = 0;
-
-                    for i in 0..9 {
-                        let i = i as usize;
-                        pr += (kernel[i] as i32) * (m_r[i] as i32);
-                        pg += (kernel[i] as i32) * (m_g[i] as i32);
-                        pb += (kernel[i] as i32) * (m_b[i] as i32);
-                    }
+                    let pr = self.conv_pixel(init, 4 * w, kernel, kernel_sq) as i32;
+                    let pg = self.conv_pixel(init + 1, 4 * w, kernel, kernel_sq) as i32;
+                    let pb = self.conv_pixel(init + 2, 4 * w, kernel, kernel_sq) as i32;
 
                     // warning: truncation
                     let p_r = pr.abs() as u8;
@@ -175,10 +157,31 @@ impl Frame {
             }
         }
 
-        self.pixels = convpixels;
+        self.pixels = convpixels
     }
 
-    #[wasm_bindgen(method)]
+    fn conv_pixel(
+        &mut self,
+        init: usize,
+        row_len: usize,
+        kernel: &Vec<i32>,
+        kernel_sq: usize,
+    ) -> u8 {
+        let mut i = init;
+        let mut ret = 0;
+
+        //  kernel by surrounding pixels matrix
+        for j in 0..kernel_sq {
+            for k in 0..kernel_sq {
+                ret += self.pixels[i + 4 * k] as i32 * kernel[k + j * kernel_sq];
+            }
+
+            i += row_len;
+        }
+
+        ret as u8
+    }
+
     pub fn draw(&mut self, ctx: CanvasRenderingContext2d) -> Result<(), JsValue> {
         let data = ImageData::new_with_u8_clamped_array_and_sh(
             Clamped(&self.pixels),
@@ -189,7 +192,6 @@ impl Frame {
         ctx.put_image_data(&data, 0.0, 0.0)
     }
 
-    #[wasm_bindgen(method)]
     pub fn dump_pixels(&self) -> Vec<u8> {
         self.pixels.clone()
     }

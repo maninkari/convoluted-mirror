@@ -28,3 +28,5 @@ Experimental mirror built with webAssembly, Rust and javascript
 - `bungcip.better-toml` for the cargo generated .toml files
 - `rust-lang.rust` for rust syntax highlighting
 - `dtsvet.vscode-wasm` for syntax highlighting and wasm binary view
+
+Remember to run yarn wasm and yarn build to update app when running on live server.
