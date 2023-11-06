@@ -109,6 +109,7 @@ impl Mirror {
         renderctx.put_image_data(&data, 0.0, 0.0)
     }
 
+    #[wasm_bindgen(method)]
     pub fn convolute_kernel(
         &mut self,
         renderctx: CanvasRenderingContext2d,

@@ -87,34 +87,6 @@ impl Frame {
         let w = self.width as usize;
         let h = self.height as usize;
 
-        // let mut kernel = vec![1, -2, 1, -2, 4, -2, 1, -2, 1];
-
-        // let mut kernel = vec![
-        //     1, 1, 2, 1, 1,
-        //     1, 1, 4, 1, 1,
-        //     4, 4, 4, 4, 4,
-        //     1, 1, 4, 1, 1,
-        //     1, 1, 2, 1, 1,
-        // ];
-
-        // let mut kernel = vec![
-        //     1, 4, 6, 4, 1,
-        //     4, 16, 24, 16, 4,
-        //     6, 24, -476, 24, 6,
-        //     4, 16, 24, 16, 4,
-        //     1, 4, 6, 4, 1,
-        // ];
-
-        // let mut kernel = vec![
-        //     1, 1, 1, 1, 1, 1, 1,
-        //     1, 1, 1, 1, 1, 1, 1,
-        //     1, 1, 1, 1, 1, 1, 1,
-        //     1, 1, 1, -270, 1, 1, 1,
-        //     1, 1, 1, 1, 1, 1, 1,
-        //     1, 1, 1, 1, 1, 1, 1,
-        //     1, 1, 1, 1, 1, 1, 1,
-        // ];
-
         let mut convpixels = vec![0; w * h * 4];
         let kernel_sq = (kernel.len() as f32).sqrt() as usize;
         let kernel_delta = (kernel_sq as f32 / 2_f32) as usize;
