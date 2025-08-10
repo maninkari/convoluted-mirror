@@ -67,11 +67,12 @@ video.height = HEIGHT
   })
 
   let i = 0
+  const WINDOW_SIZE = 7 // adjust as needed
   async function animate() {
     // draw frame coming from the video stream
     mirrorCanvasCtx.drawImage(video, 0, 0)
     // draw conlute reflection on the mirrorConvolute canvas
-    mirror.convolute_kernel(mirrorConvoluteCtx, [3, 14, 3, 14, 100, 14, 3, 14, 3], 7)
+    await mirror.convolute_kernel_windowed(mirrorConvoluteCtx, [3, 14, 3, 14, 100, 14, 3, 14, 3], 7, WINDOW_SIZE)
     requestAnimationFrame(animate)
   }
   requestAnimationFrame(animate)

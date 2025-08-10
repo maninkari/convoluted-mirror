@@ -11,6 +11,15 @@ pub fn frame_from_imgdata(imgdata: ImageData) -> Frame {
     }
 }
 
+// Internal helper to create a Frame from owned pixel data without JS round-trip
+pub fn frame_from_pixels(pixels: Vec<u8>, width: u32, height: u32) -> Frame {
+    Frame {
+        pixels,
+        width,
+        height,
+    }
+}
+
 #[wasm_bindgen]
 pub fn frame_from_delta(f1: Frame, f2: Frame) -> Frame {
     if f1.width == f2.width && f1.height == f2.height && f1.pixels.len() == f2.pixels.len() {
