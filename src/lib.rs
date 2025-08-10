@@ -1,3 +1,4 @@
+use js_sys::{Object, Reflect};
 use std::fmt;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::Clamped;
@@ -66,8 +67,17 @@ pub struct Mirror {
 impl Mirror {
     #[wasm_bindgen(constructor)]
     pub fn new(canvas: HtmlCanvasElement, w: u32, h: u32) -> Mirror {
+        // Request a 2D context optimized for frequent readbacks (getImageData)
+        let options = Object::new();
+        Reflect::set(
+            &options,
+            &JsValue::from_str("willReadFrequently"),
+            &JsValue::from_bool(true),
+        )
+        .expect("failed to set willReadFrequently on context options");
+
         let ctx = canvas
-            .get_context("2d")
+            .get_context_with_context_options("2d", &options)
             .unwrap()
             .unwrap()
             .dyn_into::<CanvasRenderingContext2d>()

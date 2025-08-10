@@ -8,7 +8,11 @@ module.exports = {
     index: "./index.js",
   },
   devServer: {
-    contentBase: path.join(__dirname, "dist"),
+    static: {
+      directory: path.join(__dirname, "dist"),
+    },
+    hot: true,
+    port: 8080,
   },
   module: {
     rules: [
@@ -39,6 +43,8 @@ module.exports = {
   output: {
     filename: "[name].js",
     path: path.resolve(__dirname, "dist"),
+    // Avoid MD4 which is disabled in Node >=17/OpenSSL 3
+    hashFunction: "sha256",
   },
   experiments: {
     asyncWebAssembly: true,

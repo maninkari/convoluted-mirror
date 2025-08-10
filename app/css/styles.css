@@ -45,20 +45,13 @@ video {
   margin: 1rem;
 }
 
-.twothirds {
-  flex-basis: 66%;
-}
-
 .one {
   text-align: center;
   flex-basis: 100%;
-}
-
-.onethird {
-  flex-basis: 32%;
 }
 
 .half {
   flex-basis: 49%;
   display: none;
 }
+
